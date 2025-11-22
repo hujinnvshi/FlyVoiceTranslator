@@ -252,8 +252,8 @@ class XfyunAsrClient:
 if __name__ == "__main__":
     # -------------------------- 请替换为你的真实参数 --------------------------
     XFYUN_APPID = "e383bc16"  # 你的讯飞appId
-    XFYUN_ACCESS_KEY_ID = "MjI0NzZmNTk5ZWQ4ZmMyMTk3MGEwYmFi"  # 你的accessKeyId
-    XFYUN_ACCESS_KEY_SECRET = "0e05359cebd090c3404a9a3260304f12"  # 你的accessKeySecret
+    XFYUN_ACCESS_KEY_ID = "0e05359cebd090c3404a9a3260304f12"  # 你的accessKeyId
+    XFYUN_ACCESS_KEY_SECRET = "MjI0NzZmNTk5ZWQ4ZmMyMTk3MGEwYmFi"  # 你的accessKeySecret
     AUDIO_FILE = "data/data.wav"  # WAV音频文件路径
     # --------------------------------------------------------------------------
 

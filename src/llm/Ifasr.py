@@ -31,6 +31,7 @@ class XfyunAsrClient:
         self.audio_duration = self._get_wav_duration_ms()  # 获取音频时长（毫秒，整数）
         self.order_id = None
         self.signature_random = self._generate_random_str()
+        self.upload_date_time = ""
         self.last_base_string = ""  # 签名原始串（编码后）
         self.last_signature = ""    # 最终签名
         self.upload_url = ""        # 最终生成的请求URL
@@ -101,6 +102,7 @@ class XfyunAsrClient:
         audio_size = str(os.path.getsize(self.audio_file_path))  # 音频文件大小（字节）
         audio_name = os.path.basename(self.audio_file_path)      # 音频文件名
         date_time = self._get_local_time_with_tz()               # 带时区的本地时间
+        self.upload_date_time = date_time
         print(f"音频文件：{audio_name}")
         print(f"文件大小：{audio_size} 字节")
         print(f"音频时长：{self.audio_duration} 毫秒")  # 打印时长，方便验证
@@ -183,22 +185,20 @@ class XfyunAsrClient:
         if not self.order_id:
             raise Exception("未获取到订单ID，无法查询转写结果")
 
-        # 构建查询参数
+        # 构建查询参数（沿用上传阶段的dateTime，生成新的随机串）
+        query_random = self._generate_random_str()
         query_params = {
             "appId": self.appid,
             "accessKeyId": self.access_key_id,
-            "dateTime": self._get_local_time_with_tz(),
+            "dateTime": self.upload_date_time or self._get_local_time_with_tz(),
             "ts": str(int(time.time())),  # 秒级时间戳
             "orderId": self.order_id,
-            "signatureRandom": self.signature_random
+            "signatureRandom": query_random
         }
 
         # 生成查询签名
         query_signature = self.generate_signature(query_params)
-        query_headers = {
-            "Content-Type": "application/json",
-            "signature": query_signature
-        }
+        query_headers = {"signature": query_signature}
 
         # 构建查询URL
         encoded_query_params = []
@@ -208,15 +208,14 @@ class XfyunAsrClient:
             encoded_query_params.append(f"{encoded_key}={encoded_v}")
         query_url = f"{LFASR_HOST}{API_GET_RESULT}?{'&'.join(encoded_query_params)}"
 
-        # 轮询查询
+        # 轮询查询（使用GET方法）
         max_retry = 10000
         retry_count = 0
         while retry_count < max_retry:
             try:
-                response = requests.post(
+                response = requests.get(
                     url=query_url,
                     headers=query_headers,
-                    data=json.dumps({}),
                     timeout=15,
                     verify=False
                 )
@@ -250,12 +249,10 @@ class XfyunAsrClient:
 
 
 if __name__ == "__main__":
-    # -------------------------- 请替换为你的真实参数 --------------------------
-    XFYUN_APPID = "e383bc16"  # 你的讯飞appId
-    XFYUN_ACCESS_KEY_ID = "0e05359cebd090c3404a9a3260304f12"  # 你的accessKeyId
-    XFYUN_ACCESS_KEY_SECRET = "MjI0NzZmNTk5ZWQ4ZmMyMTk3MGEwYmFi"  # 你的accessKeySecret
-    AUDIO_FILE = "data/data.wav"  # WAV音频文件路径
-    # --------------------------------------------------------------------------
+    XFYUN_APPID = os.getenv("XFYUN_APPID", "2ff7f2fd")
+    XFYUN_ACCESS_KEY_ID = os.getenv("XFYUN_ACCESS_KEY_ID", "0e05359cebd090c3404a9a3260304f12")
+    XFYUN_ACCESS_KEY_SECRET = os.getenv("XFYUN_ACCESS_KEY_SECRET", "MjI0NzZmNTk5ZWQ4ZmMyMTk3MGEwYmFi")
+    AUDIO_FILE = os.getenv("AUDIO_FILE", "data/data.wav")
 
     try:
         # 初始化客户端并执行完整转写流程

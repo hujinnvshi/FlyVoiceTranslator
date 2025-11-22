@@ -15,10 +15,11 @@ api_get_result = '/getResult'
 
 
 class RequestApi(object):
-    def __init__(self, appid, secret_key, upload_file_path):
+    def __init__(self, appid, secret_key, upload_file_path, wrap_width=40):
         self.appid = appid
         self.secret_key = secret_key
         self.upload_file_path = upload_file_path
+        self.wrap_width = int(wrap_width) if wrap_width else 40
         self.ts = str(int(time.time()))
         self.signa = self.get_signa()
 
@@ -53,7 +54,7 @@ class RequestApi(object):
         data = open(upload_file_path, 'rb').read(file_len)
 
         response = requests.post(url =lfasr_host + api_upload+"?"+urllib.parse.urlencode(param_dict),
-                                headers = {"Content-type":"application/json"},data=data)
+                                headers = {"Content-type":"application/octet-stream"},data=data)
         print("upload_url:",response.request.url)
         result = json.loads(response.text)
         print("upload resp:", result)
@@ -94,9 +95,9 @@ class RequestApi(object):
                         lattice = obj.get('lattice2') or []
                         parts = []
                         for seg in lattice:
-                            rt = seg.get('json_1best', {}).get('st', {}).get('rt', [])
-                            if rt:
-                                ws = rt[0].get('ws', [])
+                            rts = seg.get('json_1best', {}).get('st', {}).get('rt', [])
+                            for r in rts:
+                                ws = r.get('ws', [])
                                 for w in ws:
                                     cw = w.get('cw', [])
                                     if cw:
@@ -105,6 +106,9 @@ class RequestApi(object):
                     except Exception:
                         return order_result_str
                 text = _extract(order_result)
+                if self.wrap_width and self.wrap_width > 0:
+                    chunks = [text[i:i+self.wrap_width] for i in range(0, len(text), self.wrap_width)]
+                    text = "\n".join(chunks)
                 base = os.path.splitext(self.upload_file_path)[0]
                 txt_path = base + '.txt'
                 with open(txt_path, 'w', encoding='utf-8') as f:
@@ -122,6 +126,7 @@ class RequestApi(object):
 if __name__ == '__main__':
     api = RequestApi(appid="e383bc16",
                      secret_key="8f27da3b7c89d4bc9db540390922f69e",
-                     upload_file_path=r"data/data.wav")
+                     upload_file_path=r"data/data.wav",
+                     wrap_width=40)
 
     api.get_result()

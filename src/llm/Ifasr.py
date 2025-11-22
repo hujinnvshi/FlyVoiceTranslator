@@ -273,6 +273,12 @@ if __name__ == "__main__":
         print(f"转写文本：\n{result}")
         print("="*50)
 
+        base = os.path.splitext(AUDIO_FILE)[0]
+        md_path = base + ".md"
+        with open(md_path, "w", encoding="utf-8") as f:
+            f.write(result)
+        print(md_path)
+
     except Exception as e:
         print("\n" + "="*50)
         print("=== 程序执行失败 ===")
